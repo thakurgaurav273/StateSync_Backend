@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  name     String
+  email    String  @unique
+  password String
+  avatar   String?
+
+  memberships     OrganizationMember[]
+  teamMemberships TeamMember[]
+  comments        IssueComment[]
+  mentions        CommentMention[]
+  activities      IssueActivity[]
+}
+
+model Organization {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  avatar      String?
+  createdAt   DateTime @default(now())
+
+  members  OrganizationMember[]
+  teams    Team[]
+  projects Project[]
+  issues   Issue[]
+  labels   Label[]
+}
+
+model OrganizationMember {
+  id             Int @id @default(autoincrement())
+  organizationId Int
+  userId         Int
+
+  role   String
+  status String
+
+  invitedBy Int?
+  joinedAt  DateTime?
+  removedAt DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+}
+
+model Team {
+  id           Int    @id @default(autoincrement())
+  name         String
+  code         String
+  issueCounter Int    @default(0)
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  members      TeamMember[]
+  issues       Issue[]
+  projectLinks ProjectTeam[]
+}
+
+model TeamMember {
+  id     Int    @id @default(autoincrement())
+  teamId Int
+  userId Int
+  role   String
+
+  team Team @relation(fields: [teamId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum ProjectVisibility {
+  team
+  organization
+}
+
+model Project {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+
+  organizationId Int
+  visibility     ProjectVisibility
+
+  createdBy Int
+  updatedAt DateTime @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  teams        ProjectTeam[]
+  issues       Issue[]
+}
+
+model ProjectTeam {
+  id        Int @id @default(autoincrement())
+  projectId Int
+  teamId    Int
+
+  project Project @relation(fields: [projectId], references: [id])
+  team    Team    @relation(fields: [teamId], references: [id])
+}
+
+model Issue {
+  id      Int    @id @default(autoincrement())
+  issueId String @unique
+
+  title       String?
+  description String?
+
+  organizationId Int
+  teamId         Int
+  projectId      Int
+
+  createdBy  Int
+  assignedTo Int?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  team         Team         @relation(fields: [teamId], references: [id])
+  project      Project      @relation(fields: [projectId], references: [id])
+
+  comments   IssueComment[]
+  labels     IssueLabel[]
+  activities IssueActivity[]
+}
+
+model IssueComment {
+  id          Int      @id @default(autoincrement())
+  issueId     Int
+  userId      Int
+  content     String
+  attachments String[]
+  createdAt   DateTime @default(now())
+
+  issue    Issue            @relation(fields: [issueId], references: [id])
+  user     User             @relation(fields: [userId], references: [id])
+  mentions CommentMention[]
+}
+
+model CommentMention {
+  id        Int @id @default(autoincrement())
+  commentId Int
+  userId    Int
+
+  comment IssueComment @relation(fields: [commentId], references: [id])
+  user    User         @relation(fields: [userId], references: [id])
+
+  @@unique([commentId, userId])
+}
+
+model Label {
+  id    Int    @id @default(autoincrement())
+  title String
+  color String
+
+  organizationId Int
+  createdBy      Int
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  issues       IssueLabel[]
+}
+
+model IssueLabel {
+  id      Int @id @default(autoincrement())
+  issueId Int
+  labelId Int
+  addedBy Int
+
+  issue Issue @relation(fields: [issueId], references: [id])
+  label Label @relation(fields: [labelId], references: [id])
+}
+
+model IssueActivity {
+  id        Int      @id @default(autoincrement())
+  issueId   Int
+  userId    Int
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  issue Issue @relation(fields: [issueId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+}
