@@ -45,11 +45,17 @@ export class UsersService {
     });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+    return user ? { ...user, password: undefined } : null;
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
+  async update(req: Request, id: number, updateUserDto: UpdateUserDto) {
+    if (!req["user"] || req["user"].id !== id) {
+      throw new HttpException("Unauthorized", 401);
+    }
     const user = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,

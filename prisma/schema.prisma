@@ -18,6 +18,8 @@ model User {
   comments        IssueComment[]
   mentions        CommentMention[]
   activities      IssueActivity[]
+
+  createdTeams    Team[]
 }
 
 model Organization {
@@ -51,17 +53,25 @@ model OrganizationMember {
 }
 
 model Team {
-  id           Int    @id @default(autoincrement())
-  name         String
-  code         String
-  issueCounter Int    @default(0)
+  id             Int      @id @default(autoincrement())
+
+  name           String
+  code           String
+  issueCounter   Int      @default(0)
 
   organizationId Int
+  createdById    Int
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
   organization   Organization @relation(fields: [organizationId], references: [id])
 
-  members      TeamMember[]
-  issues       Issue[]
-  projectLinks ProjectTeam[]
+  createdBy      User @relation(fields: [createdById], references: [id])
+
+  members        TeamMember[]
+  issues         Issue[]
+  projectLinks   ProjectTeam[]
 }
 
 model TeamMember {
