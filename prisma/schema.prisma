@@ -6,6 +6,23 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ProjectVisibility {
+  team
+  organization
+}
+
+enum MemberRole {
+  owner
+  admin
+  member
+}
+
+enum MemberStatus {
+  invited
+  active
+  removed
+}
+
 model User {
   id       Int     @id @default(autoincrement())
   name     String
@@ -19,103 +36,151 @@ model User {
   mentions        CommentMention[]
   activities      IssueActivity[]
 
-  createdTeams    Team[]
+  createdTeams    Team[]    @relation("TeamCreator")
+  createdProjects Project[] @relation("ProjectCreator")
+
+  createdIssues  Issue[] @relation("IssueCreator")
+  assignedIssues Issue[] @relation("IssueAssignee")
+
+  uploadedAttachments IssueAttachment[] @relation("UploadedAttachments")
+
+  createdLabels Label[] @relation("LabelCreator")
+
+  addedIssueLabels IssueLabel[] @relation("IssueLabelAdder")
 }
 
 model Organization {
-  id          Int      @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   name        String
   description String?
   avatar      String?
-  createdAt   DateTime @default(now())
 
-  members  OrganizationMember[]
-  teams    Team[]
-  projects Project[]
-  issues   Issue[]
-  labels   Label[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members     OrganizationMember[]
+  teams       Team[]
+  projects    Project[]
+  issues      Issue[]
+  labels      Label[]
+  attachments IssueAttachment[]
 }
 
 model OrganizationMember {
-  id             Int @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   organizationId Int
   userId         Int
 
-  role   String
-  status String
+  role   MemberRole
+  status MemberStatus
 
   invitedBy Int?
+
   joinedAt  DateTime?
   removedAt DateTime?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   organization Organization @relation(fields: [organizationId], references: [id])
-  user         User         @relation(fields: [userId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
 }
 
 model Team {
-  id             Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  name           String
-  code           String
-  issueCounter   Int      @default(0)
+  name String
+  code String
+
+  issueCounter Int @default(0)
 
   organizationId Int
   createdById    Int
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
-  createdBy      User @relation(fields: [createdById], references: [id])
+  createdBy User @relation("TeamCreator", fields: [createdById], references: [id])
 
-  members        TeamMember[]
-  issues         Issue[]
-  projectLinks   ProjectTeam[]
+  members      TeamMember[]
+  issues       Issue[]
+  projectLinks ProjectTeam[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([createdById])
 }
 
 model TeamMember {
-  id     Int    @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   teamId Int
   userId Int
-  role   String
+
+  role MemberRole
+
+  createdAt DateTime @default(now())
 
   team Team @relation(fields: [teamId], references: [id])
-  user User @relation(fields: [userId], references: [id])
-}
 
-enum ProjectVisibility {
-  team
-  organization
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
 }
 
 model Project {
-  id          Int     @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   name        String
   description String?
 
   organizationId Int
-  visibility     ProjectVisibility
+  createdById    Int
 
-  createdBy Int
+  visibility ProjectVisibility
+
+  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization  @relation(fields: [organizationId], references: [id])
-  teams        ProjectTeam[]
-  issues       Issue[]
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  createdBy User @relation("ProjectCreator", fields: [createdById], references: [id])
+
+  teams  ProjectTeam[]
+  issues Issue[]
+
+  @@index([organizationId])
+  @@index([createdById])
 }
 
 model ProjectTeam {
-  id        Int @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   projectId Int
   teamId    Int
 
   project Project @relation(fields: [projectId], references: [id])
-  team    Team    @relation(fields: [teamId], references: [id])
+
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@unique([projectId, teamId])
+  @@index([projectId])
+  @@index([teamId])
 }
 
 model Issue {
-  id      Int    @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   issueId String @unique
 
   title       String?
@@ -123,74 +188,158 @@ model Issue {
 
   organizationId Int
   teamId         Int
-  projectId      Int
+  projectId Int?
+  createdById  Int
+  assignedToId Int?
 
-  createdBy  Int
-  assignedTo Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy User @relation("IssueCreator", fields: [createdById], references: [id])
+
+  assignedTo User? @relation("IssueAssignee", fields: [assignedToId], references: [id])
 
   organization Organization @relation(fields: [organizationId], references: [id])
-  team         Team         @relation(fields: [teamId], references: [id])
-  project      Project      @relation(fields: [projectId], references: [id])
 
-  comments   IssueComment[]
-  labels     IssueLabel[]
-  activities IssueActivity[]
+  team Team @relation(fields: [teamId], references: [id])
+
+  project Project? @relation(fields: [projectId], references: [id])
+
+  comments    IssueComment[]
+  labels      IssueLabel[]
+  activities  IssueActivity[]
+  attachments IssueAttachment[]
+
+  @@index([organizationId])
+  @@index([teamId])
+  @@index([projectId])
+  @@index([createdById])
+  @@index([assignedToId])
+  @@index([organizationId, assignedToId])
+  @@index([organizationId, projectId])
 }
 
 model IssueComment {
-  id          Int      @id @default(autoincrement())
-  issueId     Int
-  userId      Int
-  content     String
-  attachments String[]
-  createdAt   DateTime @default(now())
+  id Int @id @default(autoincrement())
 
-  issue    Issue            @relation(fields: [issueId], references: [id])
-  user     User             @relation(fields: [userId], references: [id])
+  issueId Int
+  userId  Int
+
+  content String
+
+  attachments String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
+
   mentions CommentMention[]
+
+  @@index([issueId])
+  @@index([userId])
 }
 
 model CommentMention {
-  id        Int @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   commentId Int
   userId    Int
 
   comment IssueComment @relation(fields: [commentId], references: [id])
-  user    User         @relation(fields: [userId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([commentId, userId])
 }
 
 model Label {
-  id    Int    @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   title String
   color String
 
   organizationId Int
-  createdBy      Int
+  createdById    Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id])
-  issues       IssueLabel[]
+
+  createdBy User @relation("LabelCreator", fields: [createdById], references: [id])
+
+  issues IssueLabel[]
+
+  @@index([organizationId])
+  @@index([createdById])
 }
 
 model IssueLabel {
-  id      Int @id @default(autoincrement())
-  issueId Int
-  labelId Int
-  addedBy Int
+  id Int @id @default(autoincrement())
 
-  issue Issue @relation(fields: [issueId], references: [id])
-  label Label @relation(fields: [labelId], references: [id])
-}
-
-model IssueActivity {
-  id        Int      @id @default(autoincrement())
   issueId   Int
-  userId    Int
-  action    String
-  metadata  Json?
+  labelId   Int
+  addedById Int
+
   createdAt DateTime @default(now())
 
   issue Issue @relation(fields: [issueId], references: [id])
-  user  User  @relation(fields: [userId], references: [id])
+
+  label Label @relation(fields: [labelId], references: [id])
+
+  addedBy User @relation("IssueLabelAdder", fields: [addedById], references: [id])
+
+  @@unique([issueId, labelId])
+  @@index([issueId])
+  @@index([labelId])
+  @@index([addedById])
+}
+
+model IssueActivity {
+  id Int @id @default(autoincrement())
+
+  issueId Int
+  userId  Int
+
+  action   String
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([issueId])
+  @@index([userId])
+}
+
+model IssueAttachment {
+  id Int @id @default(autoincrement())
+
+  issueId        Int
+  organizationId Int
+  uploadedById   Int
+
+  fileName String
+  fileUrl  String
+  fileType String
+  fileSize Int
+
+  storageKey String?
+
+  createdAt DateTime @default(now())
+
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  uploadedBy User @relation("UploadedAttachments", fields: [uploadedById], references: [id])
+
+  @@index([issueId])
+  @@index([organizationId])
+  @@index([uploadedById])
 }

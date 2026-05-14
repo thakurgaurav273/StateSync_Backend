@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
+import { Public } from "src/common/decorators/public.decorator";
 import { AuthService } from "./auth.service";
 import { CreateAuthDto } from "./dto/create-auth.dto";
 
@@ -6,6 +7,7 @@ import { CreateAuthDto } from "./dto/create-auth.dto";
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post("login")
   login(@Body() createAuthDto: CreateAuthDto) {
     return this.authService.login(createAuthDto);

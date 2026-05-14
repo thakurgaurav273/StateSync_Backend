@@ -66,7 +66,17 @@ export class UsersService {
     };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: number) {
+    try {
+      await this.prisma.user.delete({
+        where: { id },
+      });
+      return { message: `User with id ${id} deleted successfully` };
+    } catch (error) {
+      if (error.code === "P2025") {
+        throw new HttpException(`User with id ${id} not found`, 404);
+      }
+      throw error;
+    }
   }
 }

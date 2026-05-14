@@ -1,29 +1,70 @@
-import { Injectable } from '@nestjs/common';
-import { CreateTeamDto } from './dto/create-team.dto';
-import { UpdateTeamDto } from './dto/update-team.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { HttpException, Injectable } from "@nestjs/common";
+import { PrismaService } from "src/prisma/prisma.service";
+import { CreateTeamDto } from "./dto/create-team.dto";
+import { UpdateTeamDto } from "./dto/update-team.dto";
 
 @Injectable()
 export class TeamsService {
-  constructor (private prisma: PrismaService){}
+  constructor(private prisma: PrismaService) {}
   async create(createTeamDto: CreateTeamDto) {
-    
-    return 'This action adds a new team';
+    console.log(createTeamDto, "createTeamDto");
+    try {
+      const team = await this.prisma.team.create({
+        data: createTeamDto,
+      });
+      return team;
+    } catch (error) {
+      console.error("Error creating team:", error);
+      throw error;
+    }
   }
 
-  findAll() {
-    return `This action returns all teams`;
+  async findAll() {
+    try {
+      const teams = await this.prisma.team.findMany();
+      return teams;
+    } catch (error) {
+      console.error("Error finding all teams:", error);
+      throw error;
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} team`;
+  async findOne(id: number) {
+    try {
+      const team = await this.prisma.team.findUnique({
+        where: { id },
+      });
+      if (!team) {
+        throw new HttpException("Team not found", 404);
+      }
+      return team;
+    } catch (error) {
+      console.error("Error finding team:", error);
+      throw error;
+    }
   }
 
-  update(id: number, updateTeamDto: UpdateTeamDto) {
-    return `This action updates a #${id} team`;
+  async update(id: number, updateTeamDto: UpdateTeamDto) {
+    try {
+      const team = await this.prisma.team.update({
+        where: { id },
+        data: updateTeamDto,
+      });
+      return team;
+    } catch (error) {
+      console.error("Error updating team:", error);
+      throw error;
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} team`;
+  async remove(id: number) {
+    try {
+      await this.prisma.team.delete({
+        where: { id },
+      });
+    } catch (error) {
+      console.error("Error removing team:", error);
+      throw new HttpException("Team not found", 404);
+    }
   }
 }

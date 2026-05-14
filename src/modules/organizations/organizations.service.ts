@@ -1,26 +1,70 @@
-import { Injectable } from '@nestjs/common';
-import { CreateOrganizationDto } from './dto/create-organization.dto';
-import { UpdateOrganizationDto } from './dto/update-organization.dto';
+import { HttpException, Injectable } from "@nestjs/common";
+import { PrismaService } from "src/prisma/prisma.service";
+import { CreateOrganizationDto } from "./dto/create-organization.dto";
+import { UpdateOrganizationDto } from "./dto/update-organization.dto";
 
 @Injectable()
 export class OrganizationsService {
-  create(createOrganizationDto: CreateOrganizationDto) {
-    return 'This action adds a new organization';
+  constructor(private prisma: PrismaService) {}
+  async create(createOrganizationDto: CreateOrganizationDto) {
+    try {
+      const organization = await this.prisma.organization.create({
+        data: createOrganizationDto,
+      });
+      return organization;
+    } catch (error) {
+      console.error("Error creating organization:", error);
+      throw error;
+    }
   }
 
-  findAll() {
-    return `This action returns all organizations`;
+  async findAll() {
+    try {
+      const organizations = await this.prisma.organization.findMany();
+      return organizations;
+    } catch (err) {
+      console.error("Error finding all organizations:", err);
+      throw err;
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} organization`;
+  async findOne(id: number) {
+    try {
+      const organization = await this.prisma.organization.findUnique({
+        where: { id },
+      });
+
+      if (!organization) {
+        throw new HttpException("Organization not found", 404);
+      }
+      return organization;
+    } catch (err) {
+      console.error("Error finding organization:", err);
+      throw new HttpException("Organization not found", 404);
+    }
   }
 
-  update(id: number, updateOrganizationDto: UpdateOrganizationDto) {
-    return `This action updates a #${id} organization`;
+  async update(id: number, updateOrganizationDto: UpdateOrganizationDto) {
+    try {
+      const organization = await this.prisma.organization.update({
+        where: { id },
+        data: updateOrganizationDto,
+      });
+      return organization;
+    } catch (err) {
+      console.error("Error updating organization:", err);
+      throw new HttpException("Organization not found", 404);
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} organization`;
+  async remove(id: number) {
+    try {
+      await this.prisma.organization.delete({
+        where: { id },
+      });
+    } catch (err) {
+      console.error("Error removing organization:", err);
+      throw new HttpException("Organization not found", 404);
+    }
   }
 }
