@@ -40,7 +40,7 @@ export class OrganizationsService {
       return organization;
     } catch (err) {
       console.error("Error finding organization:", err);
-      throw new HttpException("Organization not found", 404);
+      throw new HttpException(err.message, 400);
     }
   }
 

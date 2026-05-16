@@ -12,6 +12,10 @@ import { ProjectsModule } from "./modules/projects/projects.module";
 import { TeamsModule } from "./modules/teams/teams.module";
 import { UsersModule } from "./modules/users/users.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { LabelsModule } from './labels/labels.module';
+import { CommentsModule } from './comments/comments.module';
+import { AttachmentsModule } from './attachments/attachments.module';
+import { ActivitiesModule } from './activities/activities.module';
 
 @Module({
   imports: [
@@ -24,6 +28,10 @@ import { PrismaModule } from "./prisma/prisma.module";
     OrganizationsModule,
     TeamsModule,
     JwtModule,
+    LabelsModule,
+    CommentsModule,
+    AttachmentsModule,
+    ActivitiesModule,
   ],
   controllers: [AppController],
   providers: [

@@ -7,8 +7,16 @@ import { UpdateTeamDto } from "./dto/update-team.dto";
 export class TeamsService {
   constructor(private prisma: PrismaService) {}
   async create(createTeamDto: CreateTeamDto) {
-    console.log(createTeamDto, "createTeamDto");
     try {
+      const existingOrganization = await this.prisma.organization.findUnique({
+        where: { id: createTeamDto.organizationId },
+      });
+      if (!existingOrganization) {
+        throw new HttpException(
+          "Organization not found, you must have an organization to create a team",
+          404
+        );
+      }
       const team = await this.prisma.team.create({
         data: createTeamDto,
       });

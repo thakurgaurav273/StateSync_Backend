@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { HttpException, Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CreateIssueDto } from "./dto/create-issue.dto";
 import { UpdateIssueDto } from "./dto/update-issue.dto";
@@ -8,6 +8,13 @@ export class IssuesService {
   constructor(private prisma: PrismaService) {}
   async create(createIssueDto: CreateIssueDto, userId: number) {
     const issue = await this.prisma.$transaction(async (tx) => {
+      const team = await tx.team.findUnique({
+        where: { id: createIssueDto.teamId },
+      });
+
+      if (!team) {
+        throw new HttpException("Team not found", 404);
+      }
       const updatedTeam = await tx.team.update({
         where: { id: createIssueDto.teamId },
         data: {
@@ -58,10 +65,26 @@ export class IssuesService {
     return issue;
   }
 
-  async findAll() {
+  async findAll(organizationId: number) {
     try {
-      const issues = await this.prisma.issue.findMany();
-      return issues;
+      const issues = await this.prisma.issue.findMany({
+        where: {
+          organizationId,
+        },
+        include: {
+          team: true,
+          project: true,
+          labels: {
+            include: {
+              label: true,
+            },
+          },
+        },
+      });
+      return issues.map((issue) => ({
+        ...issue,
+        labels: issue.labels.map((item) => item.label),
+      }));
     } catch (error) {
       console.error("Error finding all issues:", error);
       throw error;
@@ -74,7 +97,7 @@ export class IssuesService {
         where: { issueId: id },
       });
       if (!issue) {
-        throw new Error("Issue not found");
+        throw new HttpException("Issue not found", 404);
       }
       return issue;
     } catch (error) {
@@ -91,11 +114,11 @@ export class IssuesService {
       if (!issue) {
         throw new Error("Issue not found");
       }
-      await this.prisma.issue.update({
+      const updatedIssue = await this.prisma.issue.update({
         where: { id },
         data: updateIssueDto,
       });
-      return issue;
+      return updatedIssue;
     } catch (error) {
       console.error("Error updating issue:", error);
       throw error;
@@ -108,9 +131,14 @@ export class IssuesService {
         where: { id },
       });
       if (!issue) {
-        throw new Error("Issue not found");
+        throw new HttpException("Issue not found", 404);
       }
-      return issue;
+      await this.prisma.issue.delete({
+        where: { id },
+      });
+      return {
+        message: `Issue with id: ${id} deleted successfully`,
+      };
     } catch (error) {
       console.error("Error removing issue:", error);
       throw error;

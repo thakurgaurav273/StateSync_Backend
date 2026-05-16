@@ -12,9 +12,9 @@ export class IssuesController {
     return this.issuesService.create(createIssueDto, req.user.id);
   }
 
-  @Get()
-  findAll() {
-    return this.issuesService.findAll();
+  @Get(":organizationId")
+  findAll(@Param("organizationId") organizationId: string) {
+    return this.issuesService.findAll(+organizationId);
   }
 
   @Get(":id")
