@@ -79,6 +79,7 @@ export class IssuesService {
               label: true,
             },
           },
+          attachments: true,
         },
       });
       return issues.map((issue) => ({

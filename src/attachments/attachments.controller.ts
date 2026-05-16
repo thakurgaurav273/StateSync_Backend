@@ -1,34 +1,45 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { AttachmentsService } from './attachments.service';
-import { CreateAttachmentDto } from './dto/create-attachment.dto';
-import { UpdateAttachmentDto } from './dto/update-attachment.dto';
+import {
+  Controller,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+  Param,
+  ParseIntPipe,
+  Delete,
+  Get,
+} from "@nestjs/common";
 
-@Controller('attachments')
+import { FileInterceptor } from "@nestjs/platform-express";
+import { diskStorage } from "multer";
+
+import { AttachmentsService } from "./attachments.service";
+
+@Controller("issues/:issueId/attachments")
 export class AttachmentsController {
   constructor(private readonly attachmentsService: AttachmentsService) {}
 
   @Post()
-  create(@Body() createAttachmentDto: CreateAttachmentDto) {
-    return this.attachmentsService.create(createAttachmentDto);
+  @UseInterceptors(
+    FileInterceptor("file", {
+      storage: diskStorage({}),
+    })
+  )
+  upload(
+    @UploadedFile() file: Express.Multer.File,
+    @Param("issueId", ParseIntPipe) issueId: number
+  ) {
+    const mockUserId = 1;
+
+    return this.attachmentsService.uploadIssueAttachment(file, issueId, mockUserId);
   }
 
   @Get()
-  findAll() {
-    return this.attachmentsService.findAll();
+  findAll(@Param("issueId", ParseIntPipe) issueId: number) {
+    return this.attachmentsService.getIssueAttachments(issueId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.attachmentsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAttachmentDto: UpdateAttachmentDto) {
-    return this.attachmentsService.update(+id, updateAttachmentDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.attachmentsService.remove(+id);
+  @Delete(":id")
+  remove(@Param("id", ParseIntPipe) id: number) {
+    return this.attachmentsService.removeAttachment(id);
   }
 }
