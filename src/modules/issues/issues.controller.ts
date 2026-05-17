@@ -14,7 +14,7 @@ export class IssuesController {
   }
 
   @Public()
-  @Get(":organizationId")
+  @Get("org/:organizationId")
   findAll(@Param("organizationId") organizationId: string) {
     return this.issuesService.findAll(+organizationId);
   }
@@ -26,7 +26,7 @@ export class IssuesController {
 
   @Patch(":id")
   update(@Param("id") id: string, @Body() updateIssueDto: UpdateIssueDto) {
-    return this.issuesService.update(+id, updateIssueDto);
+    return this.issuesService.update(id, updateIssueDto);
   }
 
   @Delete(":id")

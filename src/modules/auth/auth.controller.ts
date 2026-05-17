@@ -37,8 +37,12 @@ export class AuthController {
       success: true,
     };
   }
-  @Delete(":id")
-  remove(@Param("id") id: string) {
-    return this.authService.remove(+id);
+  @Delete("logout")
+  remove(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie("accessToken");
+
+    return {
+      success: true,
+    };
   }
 }

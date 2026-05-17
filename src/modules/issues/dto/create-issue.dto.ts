@@ -1,4 +1,5 @@
-import { IsInt, IsOptional, IsString } from "class-validator";
+import { IsEnum, IsInt, IsOptional, IsString } from "class-validator";
+import { IssueStatus, Priority } from "@prisma/client";
 
 export class CreateIssueDto {
   @IsString()
@@ -24,4 +25,12 @@ export class CreateIssueDto {
   @IsOptional()
   @IsInt()
   assignedToId: number;
+
+  @IsOptional()
+  @IsEnum(IssueStatus)
+  status?: IssueStatus;
+
+  @IsOptional()
+  @IsEnum(Priority)
+  priority?: Priority;
 }

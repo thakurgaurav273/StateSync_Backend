@@ -2,6 +2,7 @@ import { HttpException, Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CreateIssueDto } from "./dto/create-issue.dto";
 import { UpdateIssueDto } from "./dto/update-issue.dto";
+import { connect } from "http2";
 
 @Injectable()
 export class IssuesService {
@@ -34,6 +35,12 @@ export class IssuesService {
         createdBy: {
           connect: {
             id: userId,
+          },
+        },
+
+        assignedTo: {
+          connect: {
+            id: Number(createIssueDto.assignedToId),
           },
         },
 
@@ -79,6 +86,7 @@ export class IssuesService {
               label: true,
             },
           },
+          assignedTo: true,
           attachments: true,
         },
       });
@@ -107,16 +115,16 @@ export class IssuesService {
     }
   }
 
-  async update(id: number, updateIssueDto: UpdateIssueDto) {
+  async update(id: string, updateIssueDto: UpdateIssueDto) {
     try {
       const issue = await this.prisma.issue.findUnique({
-        where: { id },
+        where: { issueId: id },
       });
       if (!issue) {
         throw new Error("Issue not found");
       }
       const updatedIssue = await this.prisma.issue.update({
-        where: { id },
+        where: { issueId: id },
         data: updateIssueDto,
       });
       return updatedIssue;
