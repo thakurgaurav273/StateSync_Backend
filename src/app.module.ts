@@ -12,10 +12,10 @@ import { ProjectsModule } from "./modules/projects/projects.module";
 import { TeamsModule } from "./modules/teams/teams.module";
 import { UsersModule } from "./modules/users/users.module";
 import { PrismaModule } from "./prisma/prisma.module";
-import { LabelsModule } from './labels/labels.module';
-import { CommentsModule } from './comments/comments.module';
-import { AttachmentsModule } from './attachments/attachments.module';
-import { ActivitiesModule } from './activities/activities.module';
+import { LabelsModule } from './submodules/labels/labels.module';
+import { CommentsModule } from './submodules/comments/comments.module';
+import { AttachmentsModule } from './submodules/attachments/attachments.module';
+import { ActivitiesModule } from './submodules/activities/activities.module';
 
 @Module({
   imports: [
