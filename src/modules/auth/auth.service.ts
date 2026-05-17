@@ -3,6 +3,7 @@ import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CreateAuthDto } from "./dto/create-auth.dto";
+import { Response } from "express";
 
 @Injectable()
 export class AuthService {
@@ -10,7 +11,7 @@ export class AuthService {
     private jwtService: JwtService,
     private prisma: PrismaService
   ) {}
-  async login(createAuthDto: CreateAuthDto) {
+  async login(createAuthDto: CreateAuthDto, res: Response) {
     const { email, password } = createAuthDto;
     try {
       const existingUserData = await this.prisma.user.findUnique({
@@ -25,8 +26,15 @@ export class AuthService {
       }
       const { password: _, ...userWithoutPassword } = existingUserData;
       const payload = userWithoutPassword;
+      const token = this.jwtService.sign(payload);
+      res.cookie("accessToken", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
       return {
-        access_token: this.jwtService.sign(payload),
+        access_token: token,
       };
     } catch (error) {
       console.error("Error during login:", error);
