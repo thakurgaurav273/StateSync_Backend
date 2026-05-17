@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Request } from "@nes
 import { CreateIssueDto } from "./dto/create-issue.dto";
 import { UpdateIssueDto } from "./dto/update-issue.dto";
 import { IssuesService } from "./issues.service";
+import { Public } from "src/common/decorators/public.decorator";
 
 @Controller("issues")
 export class IssuesController {
@@ -12,6 +13,7 @@ export class IssuesController {
     return this.issuesService.create(createIssueDto, req.user.id);
   }
 
+  @Public()
   @Get(":organizationId")
   findAll(@Param("organizationId") organizationId: string) {
     return this.issuesService.findAll(+organizationId);

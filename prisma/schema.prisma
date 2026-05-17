@@ -7,20 +7,40 @@ datasource db {
 }
 
 enum ProjectVisibility {
-  team
-  organization
+  TEAM
+  ORGANIZATION
 }
 
 enum MemberRole {
-  owner
-  admin
-  member
+  OWNER
+  ADMIN
+  MEMBER
 }
 
 enum MemberStatus {
-  invited
-  active
-  removed
+  INVITED
+  ACTIVE
+  REMOVED
+}
+
+enum IssueStatus {
+  TODO
+  BACKLOG
+  IN_PROGRESS
+  ON_HOLD
+  DONE
+  IN_REVIEW
+  CANCELED
+  DUPLICATE
+  SPILL_OVER
+
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
 
 model User {
@@ -186,6 +206,8 @@ model Issue {
   title       String?
   description String?
 
+  status IssueStatus @default(BACKLOG)
+  priority Priority @default(LOW)
   organizationId Int
   teamId         Int
   projectId Int?
