@@ -16,6 +16,38 @@ export class ActivitiesService {
     return this.prisma.issueActivity.findMany();
   }
 
+  async findInvolvingUser(userId: number) {
+    return this.prisma.issueActivity.findMany({
+      where: {
+        OR: [
+          { userId: userId },
+          {
+            issue: {
+              OR: [
+                { assignedToId: userId },
+                { createdById: userId },
+              ],
+            },
+          },
+        ],
+      },
+      include: {
+        issue: {
+          include: {
+            assignedTo: true,
+            createdBy: true,
+            team: true,
+            project: true,
+          },
+        },
+        user: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  }
+
   findOne(id: number) {
     return this.prisma.issueActivity.findUnique({
       where: { id },

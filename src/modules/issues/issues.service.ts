@@ -65,9 +65,22 @@ export class IssuesService {
         };
       }
 
-      return tx.issue.create({
+      const issue = await tx.issue.create({
         data,
       });
+
+      await tx.issueActivity.create({
+        data: {
+          issueId: issue.id,
+          userId: userId,
+          action: "created",
+          metadata: {
+            title: issue.title || "",
+          },
+        },
+      });
+
+      return issue;
     });
     return issue;
   }
@@ -115,7 +128,7 @@ export class IssuesService {
     }
   }
 
-  async update(id: string, updateIssueDto: UpdateIssueDto) {
+  async update(id: string, updateIssueDto: UpdateIssueDto, userId: number) {
     try {
       const issue = await this.prisma.issue.findUnique({
         where: { issueId: id },
@@ -127,6 +140,37 @@ export class IssuesService {
         where: { issueId: id },
         data: updateIssueDto,
       });
+
+      const changes: string[] = [];
+      if (updateIssueDto.status && updateIssueDto.status !== issue.status) {
+        changes.push(`changed status to ${updateIssueDto.status}`);
+      }
+      if (updateIssueDto.priority && updateIssueDto.priority !== issue.priority) {
+        changes.push(`changed priority to ${updateIssueDto.priority}`);
+      }
+      if (
+        updateIssueDto.assignedToId !== undefined &&
+        updateIssueDto.assignedToId !== issue.assignedToId
+      ) {
+        changes.push(`updated the assignee`);
+      }
+
+      if (changes.length > 0) {
+        await this.prisma.issueActivity.create({
+          data: {
+            issueId: issue.id,
+            userId: userId,
+            action: changes.join(", "),
+            metadata: {
+              prevStatus: issue.status,
+              newStatus: updateIssueDto.status,
+              prevAssignee: issue.assignedToId,
+              newAssignee: updateIssueDto.assignedToId,
+            },
+          },
+        });
+      }
+
       return updatedIssue;
     } catch (error) {
       console.error("Error updating issue:", error);

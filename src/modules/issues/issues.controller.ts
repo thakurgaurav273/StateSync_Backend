@@ -25,8 +25,8 @@ export class IssuesController {
   }
 
   @Patch(":id")
-  update(@Param("id") id: string, @Body() updateIssueDto: UpdateIssueDto) {
-    return this.issuesService.update(id, updateIssueDto);
+  update(@Param("id") id: string, @Body() updateIssueDto: UpdateIssueDto, @Request() req) {
+    return this.issuesService.update(id, updateIssueDto, req.user.id);
   }
 
   @Delete(":id")
